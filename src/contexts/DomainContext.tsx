@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
 // Context type
@@ -14,7 +13,6 @@ const DomainContext = createContext<DomainContextType | undefined>(undefined);
 
 // Provider component
 export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
   const [portal, setPortalState] = useState<'student' | 'admin' | null>(null);
 
   // Helper function to detect the portal from the subdomain
@@ -31,9 +29,9 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('lovableproject.com')) {
       // Check URL path for portal type indication
       const path = window.location.pathname;
-      if (path.includes('/login/student')) {
+      if (path.includes('/login/student') || path.includes('/student')) {
         return 'student';
-      } else if (path.includes('/login/admin')) {
+      } else if (path.includes('/login/admin') || path.includes('/admin')) {
         return 'admin';
       }
       
@@ -43,9 +41,15 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return storedPortal;
       }
       
-      // Default to user's role if available
-      if (user) {
-        return user.role;
+      // Get user from localStorage if available
+      const userStr = localStorage.getItem('schub_user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          return user.role;
+        } catch (e) {
+          console.error('Error parsing user from localStorage:', e);
+        }
       }
     }
     
@@ -58,13 +62,6 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setPortalState(detectedPortal);
   }, []);
 
-  // If the user changes, we might need to update the portal
-  useEffect(() => {
-    if (user && !portal) {
-      setPortalState(user.role);
-    }
-  }, [user, portal]);
-
   // Function to set the portal
   const setPortal = (newPortal: 'student' | 'admin') => {
     setPortalState(newPortal);
@@ -73,8 +70,12 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Let the user know that we're switching portals
     toast.info(`Switched to ${newPortal} portal`);
     
+    // Check if user is logged in by directly accessing localStorage
+    const userStr = localStorage.getItem('schub_user');
+    const isLoggedIn = userStr !== null;
+    
     // Optional: Redirect to the appropriate login page if not logged in
-    if (!user) {
+    if (!isLoggedIn) {
       window.location.href = `/login/${newPortal}`;
     }
   };
