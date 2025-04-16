@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDomain } from '@/contexts/DomainContext';
@@ -11,11 +10,30 @@ const Index = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // If user is already logged in, redirect to dashboard
-    if (user) {
-      navigate('/dashboard');
-      return;
-    }
+    // Handle routing based on user authentication and portal type
+    const handleRouting = () => {
+      // If user is already logged in, redirect to appropriate dashboard
+      if (user) {
+        const targetPortal = user.role || portal;
+        
+        // Ensure portal matches user role
+        if (targetPortal !== portal) {
+          setPortal(targetPortal as 'student' | 'admin');
+        }
+        
+        // Redirect to appropriate dashboard
+        navigate('/dashboard');
+        return;
+      }
+      
+      // If not logged in but portal is set, redirect to appropriate login page
+      if (portal) {
+        navigate(`/login/${portal}`);
+        return;
+      }
+      
+      // Otherwise, stay on landing page
+    };
     
     // Determine the portal from URL path if available
     const path = window.location.pathname;
@@ -25,12 +43,7 @@ const Index = () => {
       setPortal('admin');
     }
     
-    // Redirect based on subdomain/portal if not on landing page
-    if (portal === 'student' && !path.includes('/login/student')) {
-      navigate('/login/student');
-    } else if (portal === 'admin' && !path.includes('/login/admin')) {
-      navigate('/login/admin');
-    }
+    handleRouting();
   }, [portal, user, navigate, setPortal]);
   
   return <LandingPage />;

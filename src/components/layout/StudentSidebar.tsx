@@ -1,24 +1,66 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BookOpen, BookText, Calendar, FileText, Home, LayoutDashboard, MessageSquare, User } from 'lucide-react';
+import { 
+  BookOpen, 
+  FileText, 
+  LayoutDashboard, 
+  User, 
+  BookText, 
+  MessageSquare, 
+  Award, 
+  CreditCard, 
+  GraduationCap, 
+  ChevronRight
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentSidebarProps {
   open: boolean;
 }
 
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { path: '/profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
-  { path: '/subjects', label: 'Subjects', icon: <BookOpen className="h-5 w-5" /> },
-  { path: '/assignments', label: 'Assignments', icon: <FileText className="h-5 w-5" /> },
-  { path: '/marks', label: 'Marks & Assessments', icon: <BookText className="h-5 w-5" /> },
-  { path: '/behavior', label: 'Behavior Profile', icon: <Calendar className="h-5 w-5" /> },
-  { path: '/messages', label: 'Messages', icon: <MessageSquare className="h-5 w-5" /> },
+// Define sidebar sections and items
+const navSections = [
+  {
+    title: "Main",
+    items: [
+      { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+      { path: '/profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
+    ]
+  },
+  {
+    title: "Academics",
+    items: [
+      { path: '/subjects', label: 'Subjects', icon: <BookOpen className="h-5 w-5" /> },
+      { path: '/assignments', label: 'Assignments', icon: <FileText className="h-5 w-5" /> },
+      { path: '/marks', label: 'Marks & Grades', icon: <BookText className="h-5 w-5" /> },
+    ]
+  },
+  {
+    title: "Performance",
+    items: [
+      { path: '/behavior', label: 'Behavior Profile', icon: <Award className="h-5 w-5" /> },
+    ]
+  },
+  {
+    title: "Finance",
+    items: [
+      { path: '/invoices', label: 'Invoices', icon: <CreditCard className="h-5 w-5" /> },
+    ]
+  },
+  {
+    title: "Communication",
+    items: [
+      { path: '/messages', label: 'Messages', icon: <MessageSquare className="h-5 w-5" /> },
+    ]
+  }
 ];
 
 const StudentSidebar: React.FC<StudentSidebarProps> = ({ open }) => {
+  const { user } = useAuth();
+
   return (
     <aside 
       className={cn(
@@ -26,43 +68,67 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({ open }) => {
         open ? "translate-x-0" : "-translate-x-full"
       )}
     >
-      <div className="flex flex-col overflow-y-auto p-4">
-        <div className="mb-6 px-2">
-          <h2 className="text-lg font-semibold text-sidebar-foreground">Student Portal</h2>
-          <p className="text-sm text-sidebar-foreground/80">Access your academic information</p>
+      <div className="flex flex-col overflow-y-auto">
+        {/* User Profile */}
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80" />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {user?.name?.charAt(0) || 'S'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-semibold">{user?.name || 'Student Name'}</span>
+              <span className="text-xs text-muted-foreground">Class 10A | Roll #42</span>
+            </div>
+          </div>
         </div>
         
-        <nav className="flex-1">
-          <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                    )
-                  }
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+        {/* Navigation Sections */}
+        <nav className="flex-1 px-2 py-4">
+          {navSections.map((section, idx) => (
+            <div key={idx} className="mb-6">
+              <h3 className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {section.title}
+              </h3>
+              <ul className="space-y-1">
+                {section.items.map((item) => (
+                  <li key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      className={({ isActive }) =>
+                        cn(
+                          "group flex items-center justify-between rounded-md px-3 py-2 text-sm transition-all",
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                        )
+                      }
+                    >
+                      <span className="flex items-center gap-3">
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
         
-        <div className="mt-auto pt-4">
+        {/* Footer */}
+        <div className="mt-auto p-4 border-t">
           <div className="rounded-lg bg-muted p-4">
-            <h3 className="font-medium">Need help?</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Contact the IT support team for assistance with any technical issues.
-            </p>
-            <div className="text-xs text-muted-foreground">
-              support@schub.edu
+            <div className="flex items-center gap-3 mb-3">
+              <GraduationCap className="h-6 w-6 text-primary" />
+              <h3 className="font-medium">Student Portal</h3>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-2">
+              <p>Academic year: 2024-2025</p>
+              <p>Last login: April 15, 2025</p>
             </div>
           </div>
         </div>

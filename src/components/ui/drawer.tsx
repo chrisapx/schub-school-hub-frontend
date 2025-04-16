@@ -1,116 +1,107 @@
-import * as React from "react"
-import { Drawer as DrawerPrimitive } from "vaul"
 
+import * as React from "react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "./button"
+
+interface DrawerProps {
+  children: React.ReactNode
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  subtitle?: string
+  size?: "sm" | "md" | "lg" | "xl" | "full"
+}
 
 const Drawer = ({
-  shouldScaleBackground = true,
-  ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root
-    shouldScaleBackground={shouldScaleBackground}
-    {...props}
-  />
-)
-Drawer.displayName = "Drawer"
+  children,
+  isOpen,
+  onClose,
+  title,
+  subtitle,
+  size = "md"
+}: DrawerProps) => {
+  const [isClosing, setIsClosing] = React.useState(false)
+  const drawerRef = React.useRef<HTMLDivElement>(null)
 
-const DrawerTrigger = DrawerPrimitive.Trigger
+  React.useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isOpen) {
+        handleClose()
+      }
+    }
 
-const DrawerPortal = DrawerPrimitive.Portal
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(event.target as Node) &&
+        isOpen
+      ) {
+        handleClose()
+      }
+    }
 
-const DrawerClose = DrawerPrimitive.Close
+    document.addEventListener("keydown", handleEscape)
+    document.addEventListener("mousedown", handleOutsideClick)
 
-const DrawerOverlay = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay
-    ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/80", className)}
-    {...props}
-  />
-))
-DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
+    // Lock body scroll when drawer is open
+    if (isOpen) {
+      document.body.style.overflow = "hidden"
+    }
 
-const DrawerContent = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DrawerPortal>
-    <DrawerOverlay />
-    <DrawerPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
-        className
-      )}
-      {...props}
-    >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-      {children}
-    </DrawerPrimitive.Content>
-  </DrawerPortal>
-))
-DrawerContent.displayName = "DrawerContent"
+    return () => {
+      document.removeEventListener("keydown", handleEscape)
+      document.removeEventListener("mousedown", handleOutsideClick)
+      document.body.style.overflow = "auto"
+    }
+  }, [isOpen])
 
-const DrawerHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
-    {...props}
-  />
-)
-DrawerHeader.displayName = "DrawerHeader"
+  const handleClose = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setIsClosing(false)
+      onClose()
+    }, 300) // Match animation duration
+  }
 
-const DrawerFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn("mt-auto flex flex-col gap-2 p-4", className)}
-    {...props}
-  />
-)
-DrawerFooter.displayName = "DrawerFooter"
+  if (!isOpen && !isClosing) return null
 
-const DrawerTitle = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Title
-    ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-))
-DrawerTitle.displayName = DrawerPrimitive.Title.displayName
+  // Size mapping
+  const sizeClasses = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    full: "max-w-screen-lg"
+  }
 
-const DrawerDescription = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-DrawerDescription.displayName = DrawerPrimitive.Description.displayName
-
-export {
-  Drawer,
-  DrawerPortal,
-  DrawerOverlay,
-  DrawerTrigger,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerFooter,
-  DrawerTitle,
-  DrawerDescription,
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/50 backdrop-blur-sm">
+      <div
+        ref={drawerRef}
+        className={cn(
+          "h-full flex flex-col bg-background border-l border-border shadow-lg",
+          sizeClasses[size],
+          "w-full overflow-hidden",
+          isClosing ? "slide-out-drawer" : "slide-in-drawer"
+        )}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div>
+            <h2 className="text-xl font-semibold">{title}</h2>
+            {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleClose}>
+            <X className="h-5 w-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
 }
+
+export { Drawer }
