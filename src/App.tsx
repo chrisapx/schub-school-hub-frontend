@@ -1,27 +1,89 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { DomainProvider } from '@/contexts/DomainContext';
+
+// Landing page
+import LandingPage from '@/pages/LandingPage';
+
+// Auth pages
+import StudentLoginPage from '@/pages/student/StudentLoginPage';
+import AdminLoginPage from '@/pages/admin/AdminLoginPage';
+
+// Layout
+import AppLayout from '@/components/layout/AppLayout';
+
+// Student pages
+import StudentDashboard from '@/pages/student/StudentDashboard';
+import StudentProfile from '@/pages/student/StudentProfile';
+import StudentSubjects from '@/pages/student/StudentSubjects';
+import StudentAssignments from '@/pages/student/StudentAssignments';
+import StudentMarks from '@/pages/student/StudentMarks';
+import StudentBehavior from '@/pages/student/StudentBehavior';
+import StudentMessages from '@/pages/student/StudentMessages';
+
+// Admin pages
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminStudents from '@/pages/admin/AdminStudents';
+import AdminSubjects from '@/pages/admin/AdminSubjects';
+import AdminTeachers from '@/pages/admin/AdminTeachers';
+import AdminAssignments from '@/pages/admin/AdminAssignments';
+import AdminAnalytics from '@/pages/admin/AdminAnalytics';
+import AdminBehavior from '@/pages/admin/AdminBehavior';
+
+// 404 page
+import NotFound from '@/pages/NotFound';
+
+// Create React Query client
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <DomainProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Landing page */}
+              <Route path="/" element={<LandingPage />} />
+              
+              {/* Auth routes */}
+              <Route path="/login/student" element={<StudentLoginPage />} />
+              <Route path="/login/admin" element={<AdminLoginPage />} />
+              
+              {/* Student portal routes */}
+              <Route path="/" element={<AppLayout />}>
+                <Route path="dashboard" element={<StudentDashboard />} />
+                <Route path="profile" element={<StudentProfile />} />
+                <Route path="subjects" element={<StudentSubjects />} />
+                <Route path="assignments" element={<StudentAssignments />} />
+                <Route path="marks" element={<StudentMarks />} />
+                <Route path="behavior" element={<StudentBehavior />} />
+                <Route path="messages" element={<StudentMessages />} />
+              </Route>
+              
+              {/* Admin portal routes */}
+              <Route path="/" element={<AppLayout />}>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="students" element={<AdminStudents />} />
+                <Route path="subjects" element={<AdminSubjects />} />
+                <Route path="teachers" element={<AdminTeachers />} />
+                <Route path="assignments" element={<AdminAssignments />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="behavior" element={<AdminBehavior />} />
+              </Route>
+              
+              {/* 404 catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster position="top-right" />
+        </DomainProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
