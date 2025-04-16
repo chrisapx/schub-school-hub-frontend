@@ -1,7 +1,7 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
-// Types
+// User types
 export type UserRole = 'student' | 'admin';
 
 export interface User {
@@ -10,109 +10,80 @@ export interface User {
   email: string;
   role: UserRole;
   profileImage?: string;
-  token: string;
 }
 
+// Context type
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
-  isLoading: boolean;
-  error: string | null;
+  switchRole: (role: UserRole) => void;
 }
 
+// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock login function that simulates API call
-const mockLogin = async (email: string, password: string, role: UserRole): Promise<User> => {
-  // Simulate network request
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Simple validation
-  if (!email || !password) {
-    throw new Error('Email and password are required');
+// Sample users
+const SAMPLE_USERS = {
+  student: {
+    id: 'student-123',
+    name: 'Alex Student',
+    email: 'student@example.com',
+    role: 'student' as UserRole,
+    profileImage: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+  },
+  admin: {
+    id: 'admin-456',
+    name: 'Admin User',
+    email: 'admin@example.com',
+    role: 'admin' as UserRole,
+    profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
   }
-  
-  // Mock users
-  const mockUsers = {
-    student: {
-      id: 'student-123',
-      name: 'John Doe',
-      email: 'student@example.com',
-      role: 'student' as UserRole,
-      profileImage: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=250&h=250&auto=format&fit=crop',
-      token: 'mock-jwt-token-student',
-    },
-    admin: {
-      id: 'admin-456',
-      name: 'Admin User',
-      email: 'admin@example.com',
-      role: 'admin' as UserRole,
-      profileImage: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=250&h=250&auto=format&fit=crop',
-      token: 'mock-jwt-token-admin',
-    }
-  };
-  
-  // Simple authentication logic
-  if (email === 'student@example.com' && password === 'password' && role === 'student') {
-    return mockUsers.student;
-  } else if (email === 'admin@example.com' && password === 'password' && role === 'admin') {
-    return mockUsers.admin;
-  }
-  
-  throw new Error('Invalid credentials');
 };
 
+// Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Get stored user from localStorage
+  const storedUser = localStorage.getItem('schub_user');
+  const initialUser = storedUser ? JSON.parse(storedUser) : null;
   
-  // Check for stored user on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('schubUser');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse stored user', e);
-        localStorage.removeItem('schubUser');
-      }
+  const [user, setUser] = useState<User | null>(initialUser);
+
+  // Login function
+  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
+    // Simplified login for this demo
+    if ((role === 'student' && email === 'student@example.com' && password === 'password') ||
+        (role === 'admin' && email === 'admin@example.com' && password === 'password')) {
+      
+      const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
+      setUser(newUser);
+      localStorage.setItem('schub_user', JSON.stringify(newUser));
+      return true;
     }
-  }, []);
-  
-  const login = async (email: string, password: string, role: UserRole) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const loggedInUser = await mockLogin(email, password, role);
-      setUser(loggedInUser);
-      localStorage.setItem('schubUser', JSON.stringify(loggedInUser));
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      } else {
-        setError('An unknown error occurred');
-      }
-      throw e;
-    } finally {
-      setIsLoading(false);
-    }
+    return false;
   };
-  
+
+  // Logout function
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('schubUser');
+    localStorage.removeItem('schub_user');
   };
-  
+
+  // Switch between student and admin roles (for demo purposes)
+  const switchRole = (role: UserRole) => {
+    const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
+    setUser(newUser);
+    localStorage.setItem('schub_user', JSON.stringify(newUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, error }}>
+    <AuthContext.Provider value={{ user, login, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

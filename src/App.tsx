@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { DomainProvider } from '@/contexts/DomainContext';
+import { SearchProvider } from '@/contexts/SearchContext';
 
 // Landing page
 import LandingPage from '@/pages/LandingPage';
@@ -44,42 +45,39 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <DomainProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Landing page */}
-              <Route path="/" element={<LandingPage />} />
-              
-              {/* Auth routes */}
-              <Route path="/login/student" element={<StudentLoginPage />} />
-              <Route path="/login/admin" element={<AdminLoginPage />} />
-              
-              {/* Student portal routes */}
-              <Route path="/" element={<AppLayout />}>
-                <Route path="dashboard" element={<StudentDashboard />} />
-                <Route path="profile" element={<StudentProfile />} />
-                <Route path="subjects" element={<StudentSubjects />} />
-                <Route path="assignments" element={<StudentAssignments />} />
-                <Route path="marks" element={<StudentMarks />} />
-                <Route path="behavior" element={<StudentBehavior />} />
-                <Route path="messages" element={<StudentMessages />} />
-              </Route>
-              
-              {/* Admin portal routes */}
-              <Route path="/" element={<AppLayout />}>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="students" element={<AdminStudents />} />
-                <Route path="subjects" element={<AdminSubjects />} />
-                <Route path="teachers" element={<AdminTeachers />} />
-                <Route path="assignments" element={<AdminAssignments />} />
-                <Route path="analytics" element={<AdminAnalytics />} />
-                <Route path="behavior" element={<AdminBehavior />} />
-              </Route>
-              
-              {/* 404 catch-all */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-          <Toaster position="top-right" />
+          <SearchProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Landing page */}
+                <Route path="/" element={<LandingPage />} />
+                
+                {/* Auth routes */}
+                <Route path="/login/student" element={<StudentLoginPage />} />
+                <Route path="/login/admin" element={<AdminLoginPage />} />
+                
+                {/* Protected routes - wrapped in AppLayout */}
+                <Route path="/" element={<AppLayout />}>
+                  {/* Dynamic routing based on user role */}
+                  <Route path="dashboard" element={<StudentDashboard />} />
+                  <Route path="profile" element={<StudentProfile />} />
+                  <Route path="subjects" element={<StudentSubjects />} />
+                  <Route path="assignments" element={<StudentAssignments />} />
+                  <Route path="marks" element={<StudentMarks />} />
+                  <Route path="behavior" element={<StudentBehavior />} />
+                  <Route path="messages" element={<StudentMessages />} />
+                  
+                  {/* Admin routes */}
+                  <Route path="students" element={<AdminStudents />} />
+                  <Route path="teachers" element={<AdminTeachers />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                </Route>
+                
+                {/* 404 catch-all */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            <Toaster position="top-right" />
+          </SearchProvider>
         </DomainProvider>
       </AuthProvider>
     </QueryClientProvider>

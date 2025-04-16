@@ -65,7 +65,7 @@ export default {
 				},
 				// Custom Schub color palette
 				schub: {
-					primary: '#8B5CF6', // Vibrant purple as primary brand color
+					primary: '#1a365d', // Deep blue for primary brand color
 					secondary: '#7E69AB', // Secondary purple
 					accent: '#F97316', // Bright orange for accents/highlights
 					dark: '#1A1F2C', // Dark purple/navy for text
@@ -122,6 +122,18 @@ export default {
 					'0%': { transform: 'translateX(100%)' },
 					'100%': { transform: 'translateX(0)' }
 				},
+                'float': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-10px)' }
+                },
+                'pulse-soft': {
+                    '0%, 100%': { opacity: '1' },
+                    '50%': { opacity: '0.8' }
+                },
+                'shimmer': {
+                    '0%': { backgroundPosition: '-500px 0' },
+                    '100%': { backgroundPosition: '500px 0' }
+                }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -129,7 +141,15 @@ export default {
 				'fade-in': 'fade-in 0.3s ease-out',
 				'scale-in': 'scale-in 0.2s ease-out',
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
-			}
+                'float': 'float 6s ease-in-out infinite',
+                'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+                'shimmer': 'shimmer 2s infinite linear'
+			},
+            backgroundImage: {
+                'gradient-card': 'linear-gradient(135deg, rgba(26, 54, 93, 0.05) 0%, rgba(26, 54, 93, 0.1) 100%)',
+                'gradient-blue': 'linear-gradient(135deg, #1a365d 0%, #2779bd 100%)',
+                'gradient-purple': 'linear-gradient(135deg, #7e3af2 0%, #a78bfa 100%)'
+            }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

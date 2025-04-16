@@ -1,68 +1,75 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth, UserRole } from './AuthContext';
 
-export type PortalType = 'student' | 'admin' | 'landing';
-
+// Context type
 interface DomainContextType {
-  portal: PortalType;
-  subdomain: string | null;
+  portal: 'student' | 'admin' | null;
+  setPortal: (portal: 'student' | 'admin') => void;
 }
 
+// Create context
 const DomainContext = createContext<DomainContextType | undefined>(undefined);
 
+// Provider component
 export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [portalState, setPortalState] = useState<DomainContextType>({
-    portal: 'landing',
-    subdomain: null
-  });
-  
-  useEffect(() => {
-    // Get current hostname
+  const { user } = useAuth();
+  const [portal, setPortalState] = useState<'student' | 'admin' | null>(null);
+
+  // Helper function to detect the portal from the subdomain
+  const detectPortalFromSubdomain = (): 'student' | 'admin' | null => {
     const hostname = window.location.hostname;
     
-    // Check for localhost or IP for development
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
+    if (hostname.startsWith('student.')) {
+      return 'student';
+    } else if (hostname.startsWith('admin.')) {
+      return 'admin';
+    }
     
-    // If in development, use URL parameters to simulate subdomains
-    if (isLocalhost) {
-      const params = new URLSearchParams(window.location.search);
-      const portalParam = params.get('portal');
-      
-      if (portalParam === 'student') {
-        setPortalState({ portal: 'student', subdomain: 'student' });
-      } else if (portalParam === 'admin') {
-        setPortalState({ portal: 'admin', subdomain: 'admin' });
-      } else {
-        setPortalState({ portal: 'landing', subdomain: null });
+    // For local development or testing
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Check localStorage for a previously set portal type
+      const storedPortal = localStorage.getItem('schub_portal');
+      if (storedPortal === 'student' || storedPortal === 'admin') {
+        return storedPortal;
       }
-    } else {
-      // Production environment - extract subdomain
-      const parts = hostname.split('.');
       
-      if (parts.length > 2) {
-        const sub = parts[0].toLowerCase();
-        
-        if (sub === 'student') {
-          setPortalState({ portal: 'student', subdomain: 'student' });
-        } else if (sub === 'admin') {
-          setPortalState({ portal: 'admin', subdomain: 'admin' });
-        } else {
-          setPortalState({ portal: 'landing', subdomain: null });
-        }
-      } else {
-        // Main domain without subdomain
-        setPortalState({ portal: 'landing', subdomain: null });
+      // Default to user's role if available
+      if (user) {
+        return user.role;
       }
     }
+    
+    return null;
+  };
+
+  // Initialize the portal state when component mounts
+  useEffect(() => {
+    const detectedPortal = detectPortalFromSubdomain();
+    setPortalState(detectedPortal);
   }, []);
-  
+
+  // If the user changes, we might need to update the portal
+  useEffect(() => {
+    if (user && !portal) {
+      setPortalState(user.role);
+    }
+  }, [user, portal]);
+
+  // Function to set the portal
+  const setPortal = (newPortal: 'student' | 'admin') => {
+    setPortalState(newPortal);
+    localStorage.setItem('schub_portal', newPortal);
+  };
+
   return (
-    <DomainContext.Provider value={portalState}>
+    <DomainContext.Provider value={{ portal, setPortal }}>
       {children}
     </DomainContext.Provider>
   );
 };
 
+// Custom hook to use domain context
 export const useDomain = () => {
   const context = useContext(DomainContext);
   if (context === undefined) {
