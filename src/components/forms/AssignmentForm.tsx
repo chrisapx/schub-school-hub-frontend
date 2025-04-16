@@ -1,215 +1,199 @@
-
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  addAssignment, 
-  updateAssignment, 
-  Assignment, 
-  getSubjects 
-} from '@/utils/localStorage';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from 'date-fns';
+import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
-import { format, addDays } from 'date-fns';
+import { useAdminStore } from '@/stores/adminStore';
 
-// Define the form schema
-const formSchema = z.object({
-  title: z.string().min(5, {
-    message: "Title must be at least 5 characters.",
-  }),
-  subjectId: z.string().min(1, {
-    message: "Please select a subject.",
-  }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  dueDate: z.string().min(1, {
-    message: "Please select a due date.",
-  }),
-  classAssigned: z.string().min(1, {
-    message: "Please enter a class.",
-  }),
-});
+// Define the Assignment type
+export type Assignment = {
+  id: string;
+  title: string;
+  description: string;
+  subjectId: string;
+  dueDate: string;
+  classAssigned: string;
+};
 
 interface AssignmentFormProps {
-  assignment?: Assignment;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onSubmit: (assignment: Assignment) => void;
+  onCancel: () => void;
+  initialData?: Assignment;
 }
 
-export function AssignmentForm({ assignment, onSuccess, onCancel }: AssignmentFormProps) {
-  const subjects = getSubjects();
-
-  // Initialize form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: assignment ? {
-      title: assignment.title,
-      subjectId: assignment.subjectId,
-      description: assignment.description,
-      dueDate: assignment.dueDate,
-      classAssigned: assignment.classAssigned,
-    } : {
-      title: '',
-      subjectId: '',
-      description: '',
-      dueDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
-      classAssigned: '10A',
-    },
+const AssignmentForm: React.FC<AssignmentFormProps> = ({ onSubmit, onCancel, initialData }) => {
+  const [formData, setFormData] = useState<Partial<Assignment>>({
+    id: initialData?.id || uuidv4(),
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    subjectId: initialData?.subjectId || '',
+    dueDate: initialData?.dueDate || new Date().toISOString().split('T')[0],
+    classAssigned: initialData?.classAssigned || ''
   });
-
-  // Form submission handler
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      if (assignment) {
-        // Update existing assignment
-        updateAssignment(assignment.id, values);
-        toast.success("Assignment updated successfully");
-      } else {
-        // Add new assignment
-        addAssignment(values);
-        toast.success("Assignment added successfully");
-      }
-      
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      toast.error("An error occurred");
-      console.error(error);
+  
+  const [date, setDate] = useState<Date | undefined>(initialData?.dueDate ? new Date(initialData.dueDate) : undefined);
+  
+  const { subjects } = useAdminStore();
+  
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        id: initialData.id,
+        title: initialData.title,
+        description: initialData.description,
+        subjectId: initialData.subjectId,
+        dueDate: initialData.dueDate,
+        classAssigned: initialData.classAssigned
+      });
+      setDate(initialData.dueDate ? new Date(initialData.dueDate) : undefined);
     }
-  }
-
+  }, [initialData]);
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.title || !formData.description || !formData.subjectId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    const assignmentData: Omit<Assignment, "id"> = {
+      title: formData.title,
+      description: formData.description,
+      subjectId: formData.subjectId,
+      dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+      classAssigned: formData.classAssigned || ''
+    };
+    
+    onSubmit({
+      id: formData.id || uuidv4(),
+      ...assignmentData
+    } as Assignment);
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+  
+  const handleSelectChange = (value: string) => {
+    setFormData(prevState => ({
+      ...prevState,
+      subjectId: value
+    }));
+  };
+  
+  const handleDateChange = (date: Date | undefined) => {
+    setDate(date);
+    if (date) {
+      setFormData(prevState => ({
+        ...prevState,
+        dueDate: format(date, 'yyyy-MM-dd'),
+      }));
+    }
+  };
+  
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>{initialData ? 'Edit Assignment' : 'Create New Assignment'}</CardTitle>
+        <CardDescription>Fill in the details for the assignment.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
             name="title"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Assignment Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="Mathematics Problem Set" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formData.title || ''}
+            onChange={handleInputChange}
+            required
           />
-
-          <FormField
-            control={form.control}
-            name="subjectId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Subject</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a subject" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name} ({subject.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="classAssigned"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Class Assigned</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a class" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="10A">10A</SelectItem>
-                    <SelectItem value="10B">10B</SelectItem>
-                    <SelectItem value="10C">10C</SelectItem>
-                    <SelectItem value="11A">11A</SelectItem>
-                    <SelectItem value="11B">11B</SelectItem>
-                    <SelectItem value="All">All Classes</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="dueDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Due Date</FormLabel>
-                <FormControl>
-                  <Input type="date" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
             name="description"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Complete problems 1-20 in Chapter 5..." 
-                    className="futuristic-input resize-none min-h-[100px]" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formData.description || ''}
+            onChange={handleInputChange}
+            required
           />
         </div>
-
-        <div className="flex justify-end space-x-4">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button type="submit">
-            {assignment ? 'Update Assignment' : 'Add Assignment'}
-          </Button>
+        <div className="space-y-2">
+          <Label htmlFor="subjectId">Subject</Label>
+          <Select onValueChange={handleSelectChange} defaultValue={formData.subjectId || ''}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjects.map(subject => (
+                <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </form>
-    </Form>
+        <div className="space-y-2">
+          <Label htmlFor="dueDate">Due Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !date && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {date ? format(date, "yyyy-MM-dd") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="bottom">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={handleDateChange}
+                disabled={(date) =>
+                  date < new Date()
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="classAssigned">Class Assigned</Label>
+          <Input
+            id="classAssigned"
+            name="classAssigned"
+            value={formData.classAssigned || ''}
+            onChange={handleInputChange}
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" onClick={handleSubmit}>
+          {initialData ? 'Update Assignment' : 'Create Assignment'}
+        </Button>
+      </CardFooter>
+    </Card>
   );
-}
+};
+
+export default AssignmentForm;

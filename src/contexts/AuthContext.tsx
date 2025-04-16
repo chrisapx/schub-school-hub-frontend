@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
+  isLoading: boolean; // Added this property
 }
 
 // Create context
@@ -48,19 +49,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initialUser = storedUser ? JSON.parse(storedUser) : null;
   
   const [user, setUser] = useState<User | null>(initialUser);
+  const [isLoading, setIsLoading] = useState(false); // Added loading state
 
   // Login function
   const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-    // Simplified login for this demo
-    if ((role === 'student' && email === 'student@example.com' && password === 'password') ||
-        (role === 'admin' && email === 'admin@example.com' && password === 'password')) {
+    // Set loading state
+    setIsLoading(true);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
-      setUser(newUser);
-      localStorage.setItem('schub_user', JSON.stringify(newUser));
-      return true;
+      // Simplified login for this demo
+      if ((role === 'student' && email === 'student@example.com' && password === 'password') ||
+          (role === 'admin' && email === 'admin@example.com' && password === 'password')) {
+        
+        const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
+        setUser(newUser);
+        localStorage.setItem('schub_user', JSON.stringify(newUser));
+        return true;
+      }
+      return false;
+    } finally {
+      // Always reset loading state
+      setIsLoading(false);
     }
-    return false;
   };
 
   // Logout function
@@ -77,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, login, logout, switchRole, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

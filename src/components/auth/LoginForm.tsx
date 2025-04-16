@@ -24,9 +24,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
     e.preventDefault();
     
     try {
-      await login(email, password, portalType);
-      toast.success('Login successful');
-      navigate('/dashboard');
+      const success = await login(email, password, portalType);
+      if (success) {
+        toast.success('Login successful');
+        navigate('/dashboard');
+      } else {
+        toast.error('Login failed. Please check your credentials and try again.');
+      }
     } catch (error) {
       console.error('Login failed:', error);
       toast.error('Login failed. Please check your credentials and try again.');
@@ -34,7 +38,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
   };
   
   return (
-    <Card className="w-full max-w-md mx-auto animate-fade-in shadow-lg">
+    <Card className="w-full max-w-md mx-auto shadow-lg">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
           {portalType === 'student' ? 'Student Login' : 'Admin Login'}

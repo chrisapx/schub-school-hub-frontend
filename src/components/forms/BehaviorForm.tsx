@@ -1,9 +1,8 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -14,169 +13,144 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  addBehavior, 
-  updateBehavior, 
-  Behavior, 
-  getStudents
-} from '@/utils/localStorage';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { CalendarIcon } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createBehavior, updateBehavior } from '@/lib/api/behavior';
+import { getStudents } from '@/lib/api/students';
+import { Student } from '@/types';
 
-// Define the form schema
+// Define the schema for the form
 const formSchema = z.object({
-  studentId: z.string().min(1, {
-    message: "Please select a student.",
-  }),
-  date: z.string().min(1, {
-    message: "Please select a date.",
-  }),
-  category: z.string().min(1, {
-    message: "Please select a category.",
-  }),
-  score: z.coerce.number().min(0),
-  maxScore: z.coerce.number().min(1),
-  notes: z.string().min(5, {
-    message: "Notes must be at least 5 characters.",
-  }),
+  studentId: z.string().min(1, { message: 'Please select a student.' }),
+  score: z.number().optional(),
+  maxScore: z.number().optional(),
+  date: z.string().optional(),
+  category: z.string().min(1, { message: 'Please select a category.' }),
+  notes: z.string().optional(),
 });
+
+// Define the Behavior type
+export type Behavior = z.infer<typeof formSchema> & { id: string };
 
 interface BehaviorFormProps {
   behavior?: Behavior;
-  studentId?: string;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onCancel: () => void;
 }
 
-export function BehaviorForm({ behavior, studentId, onSuccess, onCancel }: BehaviorFormProps) {
-  const students = getStudents();
+const BehaviorForm: React.FC<BehaviorFormProps> = ({ behavior, onCancel }) => {
+  const queryClient = useQueryClient();
+  const [isCreate, setIsCreate] = useState(!behavior);
 
-  // Initialize form
-  const form = useForm<z.infer<typeof formSchema>>({
+  // Initialize form with default values from the behavior prop
+  const form = useForm<Behavior>({
     resolver: zodResolver(formSchema),
-    defaultValues: behavior ? {
-      studentId: behavior.studentId,
-      date: behavior.date,
-      category: behavior.category,
-      score: behavior.score,
-      maxScore: behavior.maxScore,
-      notes: behavior.notes,
-    } : {
-      studentId: studentId || '',
-      date: format(new Date(), 'yyyy-MM-dd'),
-      category: 'Attendance',
-      score: 5,
+    defaultValues: behavior || {
+      studentId: '',
+      score: 0,
       maxScore: 5,
+      date: new Date().toISOString().split('T')[0],
+      category: '',
       notes: '',
     },
   });
+  
+  const { data: students } = useQuery({
+    queryKey: ['students'],
+    queryFn: getStudents,
+  });
 
-  // Form submission handler
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      if (behavior) {
-        // Update existing behavior
-        updateBehavior(behavior.id, values);
-        toast.success("Behavior record updated successfully");
-      } else {
-        // Add new behavior
-        addBehavior(values);
-        toast.success("Behavior record added successfully");
-      }
-      
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      toast.error("An error occurred");
-      console.error(error);
+  const mutation = useMutation(
+    isCreate ? createBehavior : updateBehavior,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['behaviors']);
+        toast.success(`Behavior ${isCreate ? 'created' : 'updated'} successfully!`);
+        onCancel();
+      },
+      onError: (error: any) => {
+        toast.error(`Failed to ${isCreate ? 'create' : 'update'} behavior: ${error.message}`);
+      },
     }
-  }
+  );
+
+  // In the handleSubmit function, ensure all required fields are provided:
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!form.getValues("studentId") || !form.getValues("category")) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    const behaviorData: Omit<Behavior, "id"> = {
+      studentId: form.getValues("studentId"),
+      score: form.getValues("score") || 0,
+      maxScore: form.getValues("maxScore") || 5,
+      date: form.getValues("date") || new Date().toISOString().split('T')[0],
+      category: form.getValues("category"),
+      notes: form.getValues("notes") || ''
+    };
+    
+    if (isCreate) {
+      mutation.mutate(behaviorData);
+    } else {
+      if (behavior) {
+        mutation.mutate({ ...behaviorData, id: behavior.id });
+      } else {
+        toast.error("Behavior ID is missing for update.");
+      }
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="studentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Student</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!studentId}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a student" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {students.map((student) => (
-                      <SelectItem key={student.id} value={student.id}>
-                        {student.name} ({student.class})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="studentId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Student</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <Input type="date" className="futuristic-input" {...field} />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a student" />
+                  </SelectTrigger>
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                <SelectContent>
+                  {students?.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Select the student for this behavior record.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Attendance">Attendance</SelectItem>
-                    <SelectItem value="Discipline">Discipline</SelectItem>
-                    <SelectItem value="Leadership">Leadership</SelectItem>
-                    <SelectItem value="Participation">Participation</SelectItem>
-                    <SelectItem value="Punctuality">Punctuality</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
+        <div className="flex flex-row space-x-4">
           <FormField
             control={form.control}
             name="score"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-1/2">
                 <FormLabel>Score</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" max="5" step="0.5" className="futuristic-input" {...field} />
+                  <Input type="number" placeholder="Score" {...field} />
                 </FormControl>
-                <FormDescription>Score out of {form.watch('maxScore')}</FormDescription>
+                <FormDescription>
+                  Enter the score for this behavior.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -186,46 +160,117 @@ export function BehaviorForm({ behavior, studentId, onSuccess, onCancel }: Behav
             control={form.control}
             name="maxScore"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Maximum Score</FormLabel>
+              <FormItem className="w-1/2">
+                <FormLabel>Max Score</FormLabel>
                 <FormControl>
-                  <Input type="number" min="1" className="futuristic-input" {...field} />
+                  <Input type="number" placeholder="Max Score" {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Notes</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Student demonstrates excellent leadership qualities..." 
-                    className="futuristic-input resize-none min-h-[100px]" 
-                    {...field} 
-                  />
-                </FormControl>
+                <FormDescription>
+                  Enter the maximum possible score for this behavior.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
-        <div className="flex justify-end space-x-4">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={'outline'}
+                      className={cn(
+                        'w-[240px] pl-3 text-left font-normal',
+                        !field.value && 'text-muted-foreground'
+                      )}
+                    >
+                      {field.value ? (
+                        new Date(field.value).toLocaleDateString()
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                  <Calendar
+                    mode="single"
+                    selected={field.value ? new Date(field.value) : undefined}
+                    onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date('2020-01-01')
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Select the date when this behavior occurred.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
           )}
-          <Button type="submit">
-            {behavior ? 'Update Record' : 'Add Record'}
+        />
+
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Positive">Positive</SelectItem>
+                  <SelectItem value="Negative">Negative</SelectItem>
+                  <SelectItem value="Neutral">Neutral</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Select the category for this behavior.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Notes about this behavior" {...field} />
+              </FormControl>
+              <FormDescription>
+                Enter any additional notes about this behavior.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end space-x-2">
+          <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isLoading}>
+            {mutation.isLoading ? 'Submitting...' : 'Submit'}
           </Button>
         </div>
       </form>
     </Form>
   );
-}
+};
+
+export default BehaviorForm;

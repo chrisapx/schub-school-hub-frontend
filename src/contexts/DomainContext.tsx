@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth, UserRole } from './AuthContext';
+import { useAuth } from './AuthContext';
+import { toast } from 'sonner';
 
 // Context type
 interface DomainContextType {
@@ -27,7 +28,15 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     
     // For local development or testing
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('lovableproject.com')) {
+      // Check URL path for portal type indication
+      const path = window.location.pathname;
+      if (path.includes('/login/student')) {
+        return 'student';
+      } else if (path.includes('/login/admin')) {
+        return 'admin';
+      }
+      
       // Check localStorage for a previously set portal type
       const storedPortal = localStorage.getItem('schub_portal');
       if (storedPortal === 'student' || storedPortal === 'admin') {
@@ -60,6 +69,14 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setPortal = (newPortal: 'student' | 'admin') => {
     setPortalState(newPortal);
     localStorage.setItem('schub_portal', newPortal);
+    
+    // Let the user know that we're switching portals
+    toast.info(`Switched to ${newPortal} portal`);
+    
+    // Optional: Redirect to the appropriate login page if not logged in
+    if (!user) {
+      window.location.href = `/login/${newPortal}`;
+    }
   };
 
   return (

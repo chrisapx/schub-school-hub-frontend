@@ -1,178 +1,171 @@
-
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { addSubject, updateSubject, Subject, getTeachers } from '@/utils/localStorage';
 import { toast } from 'sonner';
-
-// Define the form schema
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Subject name must be at least 2 characters.",
-  }),
-  code: z.string().min(2, {
-    message: "Subject code must be at least 2 characters.",
-  }),
-  teacherId: z.string().min(1, {
-    message: "Please select a teacher.",
-  }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-});
+import { Subject } from '@/types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createSubject, getSubject, updateSubject } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SubjectFormProps {
-  subject?: Subject;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  isUpdate?: boolean;
 }
 
-export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) {
-  const teachers = getTeachers();
+interface SubjectFormData {
+  name: string;
+  code: string;
+  teacherId?: string;
+  description?: string;
+}
 
-  // Initialize form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: subject ? {
-      name: subject.name,
-      code: subject.code,
-      teacherId: subject.teacherId,
-      description: subject.description,
-    } : {
-      name: '',
-      code: '',
-      teacherId: '',
-      description: '',
+const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<SubjectFormData>({
+    name: '',
+    code: '',
+  });
+  const navigate = useNavigate();
+  const { subjectId } = useParams<{ subjectId: string }>();
+  const queryClient = useQueryClient();
+
+  const { isLoading: isGetLoading, data: subjectData } = useQuery({
+    queryKey: ['subject', subjectId],
+    queryFn: () => getSubject(subjectId!),
+    enabled: isUpdate && !!subjectId,
+  });
+
+  useEffect(() => {
+    if (subjectData) {
+      setFormData({
+        name: subjectData.name,
+        code: subjectData.code,
+        teacherId: subjectData.teacherId,
+        description: subjectData.description,
+      });
+    }
+  }, [subjectData]);
+
+  const createSubjectMutation = useMutation({
+    mutationFn: createSubject,
+    onSuccess: () => {
+      toast.success('Subject created successfully');
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      navigate('/subjects');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create subject: ${error.message}`);
     },
   });
 
-  // Form submission handler
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      if (subject) {
-        // Update existing subject
-        updateSubject(subject.id, values);
-        toast.success("Subject updated successfully");
-      } else {
-        // Add new subject
-        addSubject(values);
-        toast.success("Subject added successfully");
-      }
-      
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      toast.error("An error occurred");
-      console.error(error);
+  const updateSubjectMutation = useMutation({
+    mutationFn: updateSubject,
+    onSuccess: () => {
+      toast.success('Subject updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      navigate('/subjects');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update subject: ${error.message}`);
+    },
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name || !formData.code) {
+      toast.error('Please fill in all required fields');
+      return;
     }
+    
+    const subjectData: Omit<Subject, "id"> = {
+      name: formData.name,
+      code: formData.code,
+      teacherId: formData.teacherId || '',
+      description: formData.description || ''
+    };
+
+    if (isUpdate && subjectId) {
+      updateSubjectMutation.mutate({ id: subjectId, ...subjectData });
+    } else {
+      createSubjectMutation.mutate(subjectData);
+    }
+  };
+
+  if (isGetLoading) {
+    return <div>Loading subject data...</div>;
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Subject Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Mathematics" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Subject Code</FormLabel>
-                <FormControl>
-                  <Input placeholder="MATH101" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="teacherId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assigned Teacher</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a teacher" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {teachers.map((teacher) => (
-                      <SelectItem key={teacher.id} value={teacher.id}>
-                        {teacher.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="A comprehensive course on the fundamentals of mathematics..." 
-                    className="futuristic-input resize-none min-h-[100px]" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-4">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button type="submit">
-            {subject ? 'Update Subject' : 'Add Subject'}
+    <Card className="w-full max-w-md mx-auto shadow-lg">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">
+          {isUpdate ? 'Update Subject' : 'Create Subject'}
+        </CardTitle>
+        <CardDescription className="text-center">
+          {isUpdate ? 'Edit subject details' : 'Enter subject information'}
+        </CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              placeholder="Subject Name"
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="code">Code</Label>
+            <Input
+              id="code"
+              placeholder="Subject Code"
+              type="text"
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Subject Description"
+              name="description"
+              value={formData.description || ''}
+              onChange={handleChange}
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" className="w-full" disabled={createSubjectMutation.isLoading || updateSubjectMutation.isLoading}>
+            {createSubjectMutation.isLoading || updateSubjectMutation.isLoading
+              ? 'Saving...'
+              : isUpdate
+                ? 'Update Subject'
+                : 'Create Subject'}
           </Button>
-        </div>
+        </CardFooter>
       </form>
-    </Form>
+    </Card>
   );
-}
+};
+
+export default SubjectForm;

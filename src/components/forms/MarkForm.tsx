@@ -1,9 +1,8 @@
-
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -12,256 +11,222 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  addMark, 
-  updateMark, 
-  Mark, 
-  getStudents, 
-  getSubjects 
-} from '@/utils/localStorage';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
+} from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useData } from '@/contexts/DataContext';
 
-// Define the form schema
-const formSchema = z.object({
-  studentId: z.string().min(1, {
-    message: "Please select a student.",
-  }),
-  subjectId: z.string().min(1, {
-    message: "Please select a subject.",
-  }),
-  term: z.string().min(1, {
-    message: "Please enter a term.",
-  }),
-  score: z.coerce.number().min(0),
-  maxScore: z.coerce.number().min(1),
-  date: z.string().min(1, {
-    message: "Please select a date.",
-  }),
-  type: z.string().min(1, {
-    message: "Please select an assessment type.",
-  }),
+// Define the schema for the form
+const markFormSchema = z.object({
+  studentId: z.string().min(1, { message: "Student ID is required." }),
+  subjectId: z.string().min(1, { message: "Subject ID is required." }),
+  term: z.string().min(1, { message: "Term is required." }),
+  score: z.number().optional(),
+  maxScore: z.number().optional(),
+  date: z.string().optional(),
+  type: z.string().optional(),
+  notes: z.string().optional(),
 });
 
+// Define the form props
 interface MarkFormProps {
-  mark?: Mark;
-  studentId?: string;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onSubmit: (data: Mark) => void;
+  initialValues?: Mark;
 }
 
-export function MarkForm({ mark, studentId, onSuccess, onCancel }: MarkFormProps) {
-  const students = getStudents();
-  const subjects = getSubjects();
+// Define the Mark type
+export type Mark = {
+  id: string;
+  studentId: string;
+  subjectId: string;
+  term: string;
+  score: number;
+  maxScore: number;
+  date: string;
+  type: string;
+  notes: string;
+};
 
-  // Initialize form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: mark ? {
-      studentId: mark.studentId,
-      subjectId: mark.subjectId,
-      term: mark.term,
-      score: mark.score,
-      maxScore: mark.maxScore,
-      date: mark.date,
-      type: mark.type,
-    } : {
-      studentId: studentId || '',
-      subjectId: '',
-      term: 'Term 1',
-      score: 0,
-      maxScore: 100,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      type: 'Exam',
+// Define the form component
+const MarkForm: React.FC<MarkFormProps> = ({ onSubmit, initialValues }) => {
+  const { students, subjects } = useData();
+  const [formData, setFormData] = useState<Omit<Mark, "id">>({
+    studentId: initialValues?.studentId || '',
+    subjectId: initialValues?.subjectId || '',
+    term: initialValues?.term || '',
+    score: initialValues?.score || 0,
+    maxScore: initialValues?.maxScore || 100,
+    date: initialValues?.date || new Date().toISOString().split('T')[0],
+    type: initialValues?.type || 'Exam',
+    notes: initialValues?.notes || ''
+  });
+
+  // Initialize react-hook-form
+  const form = useForm<Omit<Mark, "id">>({
+    resolver: zodResolver(markFormSchema),
+    defaultValues: {
+      studentId: initialValues?.studentId || '',
+      subjectId: initialValues?.subjectId || '',
+      term: initialValues?.term || '',
+      score: initialValues?.score || 0,
+      maxScore: initialValues?.maxScore || 100,
+      date: initialValues?.date || new Date().toISOString().split('T')[0],
+      type: initialValues?.type || 'Exam',
+      notes: initialValues?.notes || ''
     },
   });
 
-  // Form submission handler
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      if (mark) {
-        // Update existing mark
-        updateMark(mark.id, values);
-        toast.success("Mark updated successfully");
-      } else {
-        // Add new mark
-        addMark(values);
-        toast.success("Mark added successfully");
-      }
-      
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      toast.error("An error occurred");
-      console.error(error);
+  // Handler for form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.studentId || !formData.subjectId || !formData.term) {
+      toast.error('Please fill in all required fields');
+      return;
     }
-  }
+    
+    const markData: Omit<Mark, "id"> = {
+      studentId: formData.studentId,
+      subjectId: formData.subjectId,
+      term: formData.term,
+      score: formData.score || 0,
+      maxScore: formData.maxScore || 100,
+      date: formData.date || new Date().toISOString().split('T')[0],
+      type: formData.type || 'Exam',
+      notes: formData.notes || ''
+    };
+    
+    onSubmit({ id: initialValues?.id || '', ...markData });
+  };
+
+  // Handler for form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="studentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Student</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!studentId}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a student" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {students.map((student) => (
-                      <SelectItem key={student.id} value={student.id}>
-                        {student.name} ({student.class})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="subjectId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Subject</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a subject" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name} ({subject.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="term"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Term</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select a term" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Term 1">Term 1</SelectItem>
-                    <SelectItem value="Term 2">Term 2</SelectItem>
-                    <SelectItem value="Term 3">Term 3</SelectItem>
-                    <SelectItem value="Final">Final</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assessment Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="futuristic-input">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Exam">Exam</SelectItem>
-                    <SelectItem value="Quiz">Quiz</SelectItem>
-                    <SelectItem value="Assignment">Assignment</SelectItem>
-                    <SelectItem value="Project">Project</SelectItem>
-                    <SelectItem value="Presentation">Presentation</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="score"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Score</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="maxScore"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Maximum Score</FormLabel>
-                <FormControl>
-                  <Input type="number" min="1" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
-                <FormControl>
-                  <Input type="date" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-4">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button type="submit">
-            {mark ? 'Update Mark' : 'Add Mark'}
-          </Button>
-        </div>
-      </form>
-    </Form>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{initialValues ? "Edit Mark" : "Add New Mark"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="studentId">Student</Label>
+                <select
+                  id="studentId"
+                  name="studentId"
+                  value={formData.studentId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="">Select Student</option>
+                  {students.map(student => (
+                    <option key={student.id} value={student.id}>{student.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="subjectId">Subject</Label>
+                <select
+                  id="subjectId"
+                  name="subjectId"
+                  value={formData.subjectId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="">Select Subject</option>
+                  {subjects.map(subject => (
+                    <option key={subject.id} value={subject.id}>{subject.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="term">Term</Label>
+                <Input
+                  type="text"
+                  id="term"
+                  name="term"
+                  value={formData.term}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Fall 2024"
+                />
+              </div>
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  type="date"
+                  id="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="score">Score</Label>
+                <Input
+                  type="number"
+                  id="score"
+                  name="score"
+                  value={formData.score}
+                  onChange={e => setFormData({ ...formData, score: Number(e.target.value) })}
+                  placeholder="e.g., 85"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxScore">Max Score</Label>
+                <Input
+                  type="number"
+                  id="maxScore"
+                  name="maxScore"
+                  value={formData.maxScore}
+                  onChange={e => setFormData({ ...formData, maxScore: Number(e.target.value) })}
+                  placeholder="e.g., 100"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="type">Type</Label>
+              <Input
+                type="text"
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                placeholder="e.g., Exam"
+              />
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                placeholder="Additional notes about the mark"
+              />
+            </div>
+            <Button type="submit">{initialValues ? "Update Mark" : "Add Mark"}</Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default MarkForm;

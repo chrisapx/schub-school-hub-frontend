@@ -1,9 +1,8 @@
-
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -12,223 +11,277 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { addStudent, updateStudent, Student } from '@/utils/localStorage';
-import { toast } from 'sonner';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createStudent, updateStudent } from '@/lib/api/students';
+import { Student } from '@/types';
 
-// Define the form schema
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: "Invalid email address.",
   }),
-  class: z.string().min(1, {
-    message: "Class is required.",
-  }),
-  rollNumber: z.string().min(1, {
-    message: "Roll number is required.",
-  }),
-  guardianName: z.string().min(2, {
-    message: "Guardian name must be at least 2 characters.",
-  }),
-  guardianContact: z.string().min(10, {
-    message: "Guardian contact must be at least 10 characters.",
-  }),
-  attendancePercentage: z.coerce.number().min(0).max(100),
-  behaviorScore: z.coerce.number().min(0).max(5),
+  profileImage: z.string().optional(),
+  class: z.string().optional(),
+  rollNumber: z.string().optional(),
+  guardianName: z.string().optional(),
+  guardianContact: z.string().optional(),
+  attendancePercentage: z.number().optional(),
+  behaviorScore: z.number().optional(),
 });
 
 interface StudentFormProps {
   student?: Student;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onCancel: () => void;
 }
 
-export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) {
-  // Initialize form
+const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel }) => {
+  const [formData, setFormData] = useState<Omit<Student, "id">>({
+    name: student?.name || '',
+    email: student?.email || '',
+    profileImage: student?.profileImage || '',
+    class: student?.class || '',
+    rollNumber: student?.rollNumber || '',
+    guardianName: student?.guardianName || '',
+    guardianContact: student?.guardianContact || '',
+    attendancePercentage: student?.attendancePercentage || 0,
+    behaviorScore: student?.behaviorScore || 0
+  });
+  
+  const queryClient = useQueryClient();
+  
+  const mutation = useMutation(
+    student ? updateStudent : createStudent,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['students']);
+        toast.success(`Student ${student ? 'updated' : 'created'} successfully`);
+        onCancel();
+      },
+      onError: (error) => {
+        toast.error(`Failed to ${student ? 'update' : 'create'} student: ${error.message}`);
+      },
+    }
+  );
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: student ? {
-      name: student.name,
-      email: student.email,
-      class: student.class,
-      rollNumber: student.rollNumber,
-      guardianName: student.guardianName,
-      guardianContact: student.guardianContact,
-      attendancePercentage: student.attendancePercentage,
-      behaviorScore: student.behaviorScore,
-    } : {
-      name: '',
-      email: '',
-      class: '',
-      rollNumber: '',
-      guardianName: '',
-      guardianContact: '',
-      attendancePercentage: 0,
-      behaviorScore: 0,
+    defaultValues: {
+      name: student?.name || "",
+      email: student?.email || "",
+      profileImage: student?.profileImage || "",
+      class: student?.class || "",
+      rollNumber: student?.rollNumber || "",
+      guardianName: student?.guardianName || "",
+      guardianContact: student?.guardianContact || "",
+      attendancePercentage: student?.attendancePercentage || 0,
+      behaviorScore: student?.behaviorScore || 0,
     },
   });
-
-  // Form submission handler
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      if (student) {
-        // Update existing student
-        updateStudent(student.id, values);
-        toast.success("Student updated successfully");
-      } else {
-        // Add new student
-        addStudent({
-          ...values,
-          profileImage: `https://avatars.dicebear.com/api/initials/${values.name.split(' ').map(n => n[0]).join('')}.svg`
-        });
-        toast.success("Student added successfully");
-      }
-      
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      toast.error("An error occurred");
-      console.error(error);
+  
+  useEffect(() => {
+    form.reset({
+      name: student?.name || "",
+      email: student?.email || "",
+      profileImage: student?.profileImage || "",
+      class: student?.class || "",
+      rollNumber: student?.rollNumber || "",
+      guardianName: student?.guardianName || "",
+      guardianContact: student?.guardianContact || "",
+      attendancePercentage: student?.attendancePercentage || 0,
+      behaviorScore: student?.behaviorScore || 0,
+    });
+    setFormData({
+      name: student?.name || '',
+      email: student?.email || '',
+      profileImage: student?.profileImage || '',
+      class: student?.class || '',
+      rollNumber: student?.rollNumber || '',
+      guardianName: student?.guardianName || '',
+      guardianContact: student?.guardianContact || '',
+      attendancePercentage: student?.attendancePercentage || 0,
+      behaviorScore: student?.behaviorScore || 0
+    });
+  }, [student, form]);
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
+  };
+  
+  const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: Number(value)
+    }));
+  };
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name || !formData.email) {
+      toast.error('Please fill in all required fields');
+      return;
     }
-  }
-
+    
+    const studentData: Omit<Student, "id"> = {
+      name: formData.name,
+      email: formData.email,
+      profileImage: formData.profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      class: formData.class || '',
+      rollNumber: formData.rollNumber || '',
+      guardianName: formData.guardianName || '',
+      guardianContact: formData.guardianContact || '',
+      attendancePercentage: formData.attendancePercentage || 0,
+      behaviorScore: formData.behaviorScore || 0
+    };
+    
+    if (student) {
+      mutation.mutate({ id: student.id, ...studentData });
+    } else {
+      mutation.mutate(studentData);
+    }
+  };
+  
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Student Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="student@example.com" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="class"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Class</FormLabel>
-                <FormControl>
-                  <Input placeholder="10A" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="rollNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Roll Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="1001" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="guardianName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Guardian Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Jane Doe" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="guardianContact"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Guardian Contact</FormLabel>
-                <FormControl>
-                  <Input placeholder="+1234567890" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="attendancePercentage"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Attendance Percentage</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" max="100" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Value between 0 and 100
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="behaviorScore"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Behavior Score</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" max="5" step="0.1" className="futuristic-input" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Value between 0 and 5
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-4">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Student Name" {...field} value={formData.name} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-          <Button type="submit">
-            {student ? 'Update Student' : 'Add Student'}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input placeholder="name@example.com" type="email" {...field} value={formData.email} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="profileImage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Profile Image URL</FormLabel>
+              <FormControl>
+                <Input placeholder="URL" {...field} value={formData.profileImage} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="class"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Class</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., 10A" {...field} value={formData.class} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="rollNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Roll Number</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., 24" {...field} value={formData.rollNumber} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="guardianName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Guardian Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Guardian Name" {...field} value={formData.guardianName} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="guardianContact"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Guardian Contact</FormLabel>
+              <FormControl>
+                <Input placeholder="Contact Number" {...field} value={formData.guardianContact} onChange={handleInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="attendancePercentage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Attendance Percentage</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="e.g., 95" {...field} value={formData.attendancePercentage} onChange={handleNumberInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="behaviorScore"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Behavior Score</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="e.g., 4" {...field} value={formData.behaviorScore} onChange={handleNumberInputChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end gap-4">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isLoading}>
+            {mutation.isLoading ? "Saving..." : "Save"}
           </Button>
         </div>
       </form>
     </Form>
   );
-}
+};
+
+export default StudentForm;
