@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useForm } from "react-hook-form";
@@ -253,7 +252,7 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onSuccess }) => {
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="z-[60]">
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="on-leave">On Leave</SelectItem>

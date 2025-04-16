@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +40,32 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Dashboard card styles */
+.data-card {
+  padding: 1.5rem;
+}
+
+.data-card-content {
+  padding: 1rem;
+}
+
+/* Drawer animations */
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+.slide-in-drawer {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.slide-out-drawer {
+  animation: slideOut 0.3s ease forwards;
 }

@@ -77,6 +77,25 @@ const Drawer = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/50 backdrop-blur-sm">
+      <style jsx global>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        
+        @keyframes slideOut {
+          from { transform: translateX(0); }
+          to { transform: translateX(100%); }
+        }
+        
+        .slide-in-drawer {
+          animation: slideIn 0.3s ease forwards;
+        }
+        
+        .slide-out-drawer {
+          animation: slideOut 0.3s ease forwards;
+        }
+      `}</style>
       <div
         ref={drawerRef}
         className={cn(

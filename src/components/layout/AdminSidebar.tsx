@@ -26,34 +26,34 @@ const navSections = [
   {
     title: "Overview",
     items: [
-      { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+      { path: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     ]
   },
   {
     title: "People Management",
     items: [
-      { path: '/students', label: 'Students', icon: <Users className="h-5 w-5" /> },
-      { path: '/teachers', label: 'Teachers', icon: <GraduationCap className="h-5 w-5" /> },
+      { path: '/admin/students', label: 'Students', icon: <Users className="h-5 w-5" /> },
+      { path: '/admin/teachers', label: 'Teachers', icon: <GraduationCap className="h-5 w-5" /> },
     ]
   },
   {
     title: "Academics",
     items: [
-      { path: '/subjects', label: 'Subjects', icon: <BookOpen className="h-5 w-5" /> },
-      { path: '/assignments', label: 'Assignments', icon: <FileText className="h-5 w-5" /> },
-      { path: '/behavior', label: 'Behavior', icon: <Award className="h-5 w-5" /> },
+      { path: '/admin/subjects', label: 'Subjects', icon: <BookOpen className="h-5 w-5" /> },
+      { path: '/admin/assignments', label: 'Assignments', icon: <FileText className="h-5 w-5" /> },
+      { path: '/admin/behavior', label: 'Behavior', icon: <Award className="h-5 w-5" /> },
     ]
   },
   {
     title: "Finance",
     items: [
-      { path: '/invoices', label: 'Invoices', icon: <CreditCard className="h-5 w-5" /> },
+      { path: '/admin/invoices', label: 'Invoices', icon: <CreditCard className="h-5 w-5" /> },
     ]
   },
   {
     title: "Reports",
     items: [
-      { path: '/analytics', label: 'Analytics', icon: <BarChart2 className="h-5 w-5" /> },
+      { path: '/admin/analytics', label: 'Analytics', icon: <BarChart2 className="h-5 w-5" /> },
     ]
   },
 ];
