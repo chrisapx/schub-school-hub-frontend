@@ -12,6 +12,14 @@ const Index = () => {
   useEffect(() => {
     // Handle routing based on user authentication and portal type
     const handleRouting = () => {
+      // Determine the portal from URL path if available
+      const path = window.location.pathname;
+      if (path.includes('/login/student')) {
+        setPortal('student');
+      } else if (path.includes('/login/admin')) {
+        setPortal('admin');
+      }
+      
       // If user is already logged in, redirect to appropriate dashboard
       if (user) {
         const targetPortal = user.role || portal;
@@ -22,7 +30,7 @@ const Index = () => {
         }
         
         // Redirect to appropriate dashboard
-        navigate('/dashboard');
+        navigate(`/${targetPortal}/dashboard`);
         return;
       }
       
@@ -34,14 +42,6 @@ const Index = () => {
       
       // Otherwise, stay on landing page
     };
-    
-    // Determine the portal from URL path if available
-    const path = window.location.pathname;
-    if (path.includes('/login/student')) {
-      setPortal('student');
-    } else if (path.includes('/login/admin')) {
-      setPortal('admin');
-    }
     
     handleRouting();
   }, [portal, user, navigate, setPortal]);

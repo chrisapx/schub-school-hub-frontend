@@ -11,6 +11,18 @@ interface Teacher {
   department?: string;
   joinDate?: string;
   status?: 'active' | 'inactive' | 'on-leave';
+  documents?: {
+    appointmentLetter?: string;
+    contractId?: string;
+    referenceLetter?: string;
+    academicCertificates?: string[];
+    otherDocuments?: string[];
+  };
+  employeeId?: string;
+  emergencyContact?: string;
+  bankAccount?: string;
+  address?: string;
+  specialization?: string[];
 }
 
 // Student type
@@ -32,6 +44,21 @@ interface Student {
   attendancePercentage?: number;
   behaviorScore?: number;
   status?: 'active' | 'suspended' | 'graduated';
+  documents?: {
+    previousSchoolRecords?: string;
+    birthCertificate?: string;
+    medicalRecords?: string;
+    idPhotocopy?: string;
+    guardianIdPhotocopy?: string;
+    otherDocuments?: string[];
+  };
+  allergies?: string[];
+  medicalConditions?: string[];
+  nationality?: string;
+  religion?: string;
+  hobbies?: string[];
+  emergencyContact?: string;
+  transportRoute?: string;
 }
 
 // Subject type

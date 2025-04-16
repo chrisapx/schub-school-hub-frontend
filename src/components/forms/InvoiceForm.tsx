@@ -113,7 +113,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onSuccess }) => {
   
   // Mutation for creating a new invoice
   const createMutation = useMutation({
-    mutationFn: (data: Omit<Invoice, "id" | "invoiceNumber" | "createdAt">) => createInvoice(data),
+    mutationFn: (data: Omit<Invoice, "id">) => createInvoice(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.success('Invoice created successfully');
@@ -146,15 +146,28 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onSuccess }) => {
       // Update existing invoice
       updateMutation.mutate({
         ...invoice,
-        ...data,
+        studentId: data.studentId,
+        dueDate: data.dueDate,
+        term: data.term,
+        status: data.status,
+        items: data.items,
         amount,
         updatedAt: new Date().toISOString(),
       });
     } else {
+      // Generate an invoice number
+      const invoiceNumber = `INV-${Date.now().toString().substring(7)}`;
+      
       // Create new invoice
       createMutation.mutate({
-        ...data,
+        studentId: data.studentId,
+        dueDate: data.dueDate,
+        term: data.term,
+        status: data.status,
+        items: data.items,
         amount,
+        invoiceNumber,
+        createdAt: new Date().toISOString(),
       });
     }
   };

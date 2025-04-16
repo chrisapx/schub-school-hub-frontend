@@ -1,4 +1,6 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -181,3 +183,25 @@
 .stagger-delay > *:nth-child(3) { animation-delay: 0.1s; }
 .stagger-delay > *:nth-child(4) { animation-delay: 0.15s; }
 .stagger-delay > *:nth-child(5) { animation-delay: 0.2s; }
+
+/* Dashboard card improvements */
+.dashboard-card {
+  @apply rounded-xl shadow-md hover:shadow-lg transition-all duration-300;
+  @apply border border-transparent hover:border-primary/10;
+  @apply bg-card hover:bg-gradient-to-br hover:from-card hover:to-primary/5;
+}
+
+/* Futuristic card design */
+.futuristic-card {
+  @apply backdrop-blur-sm bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-900/80 dark:to-gray-800/60;
+  @apply border border-white/20 dark:border-gray-700/30;
+  @apply shadow-lg hover:shadow-xl transition-all duration-300;
+  @apply rounded-xl overflow-hidden;
+  @apply relative;
+}
+
+.futuristic-card::after {
+  content: '';
+  @apply absolute inset-0 rounded-xl pointer-events-none;
+  @apply bg-gradient-to-tr from-transparent via-primary/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300;
+}

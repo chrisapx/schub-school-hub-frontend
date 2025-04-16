@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,23 +7,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Subject } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createSubject, getSubject, updateSubject } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 interface SubjectFormProps {
   isUpdate?: boolean;
+  onSuccess?: () => void;
 }
 
 interface SubjectFormData {
   name: string;
   code: string;
-  teacherId?: string;
+  teacher?: string;
   description?: string;
 }
 
-const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
+const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false, onSuccess }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState<SubjectFormData>({
     name: '',
@@ -43,7 +45,7 @@ const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
       setFormData({
         name: subjectData.name,
         code: subjectData.code,
-        teacherId: subjectData.teacherId,
+        teacher: subjectData.teacher,
         description: subjectData.description,
       });
     }
@@ -54,7 +56,11 @@ const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
     onSuccess: () => {
       toast.success('Subject created successfully');
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      navigate('/subjects');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/subjects');
+      }
     },
     onError: (error: any) => {
       toast.error(`Failed to create subject: ${error.message}`);
@@ -66,7 +72,11 @@ const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
     onSuccess: () => {
       toast.success('Subject updated successfully');
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      navigate('/subjects');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/subjects');
+      }
     },
     onError: (error: any) => {
       toast.error(`Failed to update subject: ${error.message}`);
@@ -89,17 +99,17 @@ const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
       return;
     }
     
-    const subjectData: Omit<Subject, "id"> = {
+    const subjectData: Partial<Subject> = {
       name: formData.name,
       code: formData.code,
-      teacherId: formData.teacherId || '',
+      teacher: formData.teacher || '',
       description: formData.description || ''
     };
 
     if (isUpdate && subjectId) {
-      updateSubjectMutation.mutate({ id: subjectId, ...subjectData });
+      updateSubjectMutation.mutate({ id: subjectId, ...subjectData } as Subject);
     } else {
-      createSubjectMutation.mutate(subjectData);
+      createSubjectMutation.mutate(subjectData as Omit<Subject, "id">);
     }
   };
 
@@ -155,9 +165,9 @@ const SubjectForm: React.FC<SubjectFormProps> = ({ isUpdate = false }) => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={createSubjectMutation.isLoading || updateSubjectMutation.isLoading}>
-            {createSubjectMutation.isLoading || updateSubjectMutation.isLoading
-              ? 'Saving...'
+          <Button type="submit" className="w-full" disabled={createSubjectMutation.isPending || updateSubjectMutation.isPending}>
+            {createSubjectMutation.isPending || updateSubjectMutation.isPending
+              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
               : isUpdate
                 ? 'Update Subject'
                 : 'Create Subject'}
