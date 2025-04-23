@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { UserRole } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LoginFormProps {
-  portalType: UserRole;
+  portalType: 'student' | 'admin';
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
@@ -25,25 +26,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
     e.preventDefault();
     
     try {
-      const success = await login(email, password, portalType);
+      const success = await login(email, password);
+      
       if (success) {
-        const user = await supabase.auth.getUser();
-        const { data: profile } = await supabase.from('profiles')
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error('Could not retrieve user information');
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
           .select('role, school_id')
-          .eq('id', user.data.user?.id)
+          .eq('id', user.id)
           .single();
 
         toast.success('Login successful');
         
-        if (profile?.role === 'student') {
+        // Redirect based on role and portal type
+        if (portalType === 'student' && profile?.role === 'student') {
           navigate('/student/dashboard');
-        } else if (profile?.role === 'super_admin') {
-          navigate('/admin/schools');
-        } else {
+        } else if (portalType === 'admin' && ['super_admin', 'school_admin', 'teacher'].includes(profile?.role)) {
           navigate('/admin/dashboard');
+        } else {
+          toast.error('Access denied. Please use the correct portal.');
         }
-      } else {
-        toast.error('Login failed. Please check your credentials and try again.');
       }
     } catch (error) {
       console.error('Login failed:', error);
@@ -80,7 +87,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {portalType === 'student' ? 'Use S202500290001@smark.schub.com' : 'Use chris.m@smack.schub.com'}
+              {portalType === 'student' ? 'Use S202500290001@smark.schub.com' : 'Use mcaplexya@gmail.com'}
             </p>
           </div>
           <div className="space-y-2">
@@ -110,7 +117,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
                 {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">Use "password" for demo</p>
+            <p className="text-xs text-muted-foreground">Use "password123" for demo</p>
           </div>
         </CardContent>
         <CardFooter>
