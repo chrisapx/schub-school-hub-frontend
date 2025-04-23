@@ -114,7 +114,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ toggleSidebar }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative rounded-full">
                 <Avatar>
-                  {/* <AvatarImage src={user?.profileImage} alt={user?.name} /> */}
+                  <AvatarImage  src={user?.profileImage} alt={user?.name} />
                   <AvatarFallback>{user?.name ? getInitials(user.name) : <User />}</AvatarFallback>
                 </Avatar>
               </Button>
