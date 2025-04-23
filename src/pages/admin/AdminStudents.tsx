@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { Student } from '@/types';
-// Import necessary modules and components
+import type { Student } from '@/types/index';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,8 +35,6 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-// Import student type and form
-import { useSearchParams } from 'react-router-dom';
 
 const AdminStudents = () => {
   const { toast } = useToast();
@@ -99,7 +96,6 @@ const AdminStudents = () => {
     fetchStudents();
   }, []);
 
-  // Filter students based on search term and active tab
   const filteredStudents = students.filter((student) => {
     const matchesSearch = 
       student.profile?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,25 +111,21 @@ const AdminStudents = () => {
     return matchesSearch;
   });
   
-  // Handler for adding a new student
   const handleAddStudent = () => {
     searchParams.set('studentFormOpen', '1');
     setSearchParams(searchParams);
   };
   
-  // Handler for editing a student
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
     setShowStudentForm(true);
   };
   
-  // Handler for viewing student details
   const handleViewStudent = (student: Student) => {
     setSelectedStudent(student);
     setShowStudentDetails(true);
   };
   
-  // Handler for deleting a student
   const handleDeleteStudent = (studentId: string) => {
     const updatedStudents = students.filter((s) => s.id !== studentId);
     setStudents(updatedStudents);
@@ -144,12 +136,10 @@ const AdminStudents = () => {
     });
   };
   
-  // Handler for form submission (create/update student)
   const handleStudentFormSubmit = (formData: Student) => {
     let updatedStudents: Student[];
     
     if (selectedStudent) {
-      // Update existing student
       updatedStudents = students.map((s) =>
         s.id === formData.id ? formData : s
       );
@@ -158,7 +148,6 @@ const AdminStudents = () => {
         description: 'Student information has been updated successfully',
       });
     } else {
-      // Add new student
       const newStudent = {
         ...formData,
         id: `STU-${Date.now()}`,
@@ -177,7 +166,6 @@ const AdminStudents = () => {
     setShowStudentForm(false);
   };
   
-  // Get status badge style based on enrollment status
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
