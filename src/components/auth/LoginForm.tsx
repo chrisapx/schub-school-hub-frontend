@@ -19,6 +19,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const user = localStorage.getItem('schub_user');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
       const success = await login(email, password, portalType);
       if (success) {
         toast.success('Login successful');
-        navigate('/dashboard');
+        // Redirect to the appropriate dashboard based on the portal type
+        if( user?.role === 'student' ) {
+          navigate('/student/dashboard');
+        } else{
+          navigate('/admin/dashboard');
+        } 
       } else {
         toast.error('Login failed. Please check your credentials and try again.');
       }
@@ -66,7 +72,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {portalType === 'student' ? 'Use student@example.com' : 'Use admin@example.com'}
+              {portalType === 'student' ? 'Use S202500290001@smark.schub.com' : 'Use chris.m@smack.schub.com'}
             </p>
           </div>
           <div className="space-y-2">

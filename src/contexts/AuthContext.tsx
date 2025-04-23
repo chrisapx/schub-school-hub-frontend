@@ -27,18 +27,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Sample users
 const SAMPLE_USERS = {
   student: {
-    id: 'student-123',
-    name: 'Alex Student',
-    email: 'student@example.com',
+    id: 'S-2025-00290-001',
+    name: 'Kamugisha Isaac',
+    email: 'S202500290001@smark.schub.com',
     role: 'student' as UserRole,
-    profileImage: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    profileImage: '/placeholder.svg'
   },
   admin: {
-    id: 'admin-456',
-    name: 'Admin User',
-    email: 'admin@example.com',
+    id: 'A-2025-00290-001',
+    name: 'Christopher M.',
+    email: 'chris.m@smack.schub.com',
     role: 'admin' as UserRole,
-    profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    profileImage: '/placeholder.svg'
   }
 };
 
@@ -60,8 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 800));
       
       // Simplified login for this demo
-      if ((role === 'student' && email === 'student@example.com' && password === 'password') ||
-          (role === 'admin' && email === 'admin@example.com' && password === 'password')) {
+      if ((role === 'student' && email === 'S202500290001@smark.schub.com' && password === 'password') ||
+          (role === 'admin' && email === 'chris.m@smack.schub.com' && password === 'password')) {
         
         const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
         setUser(newUser);

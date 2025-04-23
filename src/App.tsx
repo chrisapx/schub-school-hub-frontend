@@ -28,6 +28,7 @@ import StudentMessages from './pages/student/StudentMessages';
 import StudentProfile from './pages/student/StudentProfile';
 import ThemeToggleHeader from './components/layout/ThemeToggleHeader';
 import { Toaster } from './components/ui/sonner';
+import MarkForm from './components/forms/MarkForm';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ function App() {
         <DomainProvider>
           <SearchProvider>
             <Router>
+              <MarkForm/>
               <ThemeToggleHeader />
               <Routes>
                 <Route path="/" element={<Index />} />

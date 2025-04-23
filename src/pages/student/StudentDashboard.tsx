@@ -28,7 +28,7 @@ const StudentDashboard: React.FC = () => {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Attendance</p>
@@ -41,7 +41,7 @@ const StudentDashboard: React.FC = () => {
           <Progress value={data.profile.attendancePercentage} className="mt-3" />
         </Card>
         
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Upcoming Assignments</p>
@@ -53,7 +53,7 @@ const StudentDashboard: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Behavior Points</p>
@@ -65,7 +65,7 @@ const StudentDashboard: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Class</p>

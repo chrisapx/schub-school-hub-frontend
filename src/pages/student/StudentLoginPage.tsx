@@ -32,7 +32,7 @@ const StudentLoginPage: React.FC = () => {
       <LoginForm portalType="student" />
       
       <p className="mt-8 text-sm text-center text-muted-foreground">
-        <a href="/" className="underline hover:text-primary">
+        <a href="/landing" className="underline hover:text-primary">
           Back to main page
         </a>
       </p>

@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 // Import student type and form
 import { Student } from '@/types';
+import { useSearchParams } from 'react-router-dom';
 
 const AdminStudents = () => {
   const { toast } = useToast();
@@ -44,6 +45,7 @@ const AdminStudents = () => {
   const [showStudentForm, setShowStudentForm] = useState(false);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
   
   useEffect(() => {
     // Fetch students from localStorage
@@ -86,8 +88,8 @@ const AdminStudents = () => {
   
   // Handler for adding a new student
   const handleAddStudent = () => {
-    setSelectedStudent(null);
-    setShowStudentForm(true);
+    searchParams.set('studentFormOpen', '1');
+    setSearchParams(searchParams);
   };
   
   // Handler for editing a student
