@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { UserRole } from '@/types';
 
 interface LoginFormProps {
   portalType: UserRole;
@@ -19,7 +20,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
-  const user = localStorage.getItem('schub_user');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,13 +27,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
     try {
       const success = await login(email, password, portalType);
       if (success) {
+        const user = await supabase.auth.getUser();
+        const { data: profile } = await supabase.from('profiles')
+          .select('role, school_id')
+          .eq('id', user.data.user?.id)
+          .single();
+
         toast.success('Login successful');
-        // Redirect to the appropriate dashboard based on the portal type
-        if( user?.role === 'student' ) {
+        
+        if (profile?.role === 'student') {
           navigate('/student/dashboard');
-        } else{
+        } else if (profile?.role === 'super_admin') {
+          navigate('/admin/schools');
+        } else {
           navigate('/admin/dashboard');
-        } 
+        }
       } else {
         toast.error('Login failed. Please check your credentials and try again.');
       }

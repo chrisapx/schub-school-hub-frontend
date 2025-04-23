@@ -1,5 +1,9 @@
-// Import necessary modules and components
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { Student } from '@/types';
+// Import necessary modules and components
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +37,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 // Import student type and form
-import { Student } from '@/types';
 import { useSearchParams } from 'react-router-dom';
 
 const AdminStudents = () => {
@@ -48,14 +51,39 @@ const AdminStudents = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   useEffect(() => {
-    // Fetch students from localStorage
-    const fetchStudents = () => {
+    const fetchStudents = async () => {
       setIsLoading(true);
       try {
-        const storedStudents = localStorage.getItem('students');
-        if (storedStudents) {
-          setStudents(JSON.parse(storedStudents));
+        const { data: profile } = await supabase.from('profiles')
+          .select('school_id, role')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (!profile?.school_id && profile?.role !== 'super_admin') {
+          toast.error('No school associated with this account');
+          return;
         }
+
+        const { data, error } = await supabase
+          .from('students')
+          .select(`
+            *,
+            profile:profiles(
+              first_name,
+              last_name,
+              email,
+              profile_image
+            ),
+            class:classes(
+              name,
+              grade_level
+            )
+          `)
+          .eq(profile.role === 'super_admin' ? 'id' : 'school_id', 
+              profile.role === 'super_admin' ? 'id' : profile.school_id);
+
+        if (error) throw error;
+        setStudents(data || []);
       } catch (error) {
         console.error('Error fetching students:', error);
         toast({
@@ -69,14 +97,15 @@ const AdminStudents = () => {
     };
     
     fetchStudents();
-  }, [toast]);
-  
+  }, []);
+
   // Filter students based on search term and active tab
   const filteredStudents = students.filter((student) => {
     const matchesSearch = 
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.grade?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.profile?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.profile?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.class?.grade_level?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.id.toLowerCase().includes(searchTerm.toLowerCase());
       
     if (activeTab === 'all') return matchesSearch;
@@ -239,21 +268,21 @@ const AdminStudents = () => {
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <Avatar>
-                                  <AvatarImage src={student.profileImage} />
-                                  <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                  <AvatarImage src={student.profile?.profile_image} />
+                                  <AvatarFallback>{student.profile?.first_name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <div className="font-medium">{student.name}</div>
-                                  <div className="text-sm text-muted-foreground">{student.email}</div>
+                                  <div className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</div>
+                                  <div className="text-sm text-muted-foreground">{student.profile?.email}</div>
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>{student.id}</TableCell>
-                            <TableCell>{student.grade || 'N/A'}</TableCell>
+                            <TableCell>{student.class?.grade_level || 'N/A'}</TableCell>
                             <TableCell>{getStatusBadge(student.enrollmentStatus)}</TableCell>
                             <TableCell>
-                              {student.enrollmentDate
-                                ? new Date(student.enrollmentDate).toLocaleDateString()
+                              {student.created_at
+                                ? new Date(student.created_at).toLocaleDateString()
                                 : 'N/A'}
                             </TableCell>
                             <TableCell className="text-right">
