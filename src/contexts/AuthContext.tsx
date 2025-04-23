@@ -1,101 +1,82 @@
 
 import React, { createContext, useContext, useState } from 'react';
-
-// User types
-export type UserRole = 'student' | 'admin';
+import { supabase } from '@/integrations/supabase/client';
+import type { UserRole } from '@/types';
 
 export interface User {
   id: string;
-  name: string;
   email: string;
   role: UserRole;
-  profileImage?: string;
+  first_name?: string;
+  last_name?: string;
+  profile_image?: string;
+  school_id?: string;
 }
 
-// Context type
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: UserRole) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
-  isLoading: boolean; // Added this property
+  isLoading: boolean;
 }
 
-// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Sample users
-const SAMPLE_USERS = {
-  student: {
-    id: 'S-2025-00290-001',
-    name: 'Kamugisha Isaac',
-    email: 'S202500290001@smark.schub.com',
-    role: 'student' as UserRole,
-    profileImage: '/placeholder.svg'
-  },
-  admin: {
-    id: 'A-2025-00290-001',
-    name: 'Christopher M.',
-    email: 'chris.m@smack.schub.com',
-    role: 'admin' as UserRole,
-    profileImage: '/placeholder.svg'
-  }
-};
-
-// Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Get stored user from localStorage
-  const storedUser = localStorage.getItem('schub_user');
-  const initialUser = storedUser ? JSON.parse(storedUser) : null;
-  
-  const [user, setUser] = useState<User | null>(initialUser);
-  const [isLoading, setIsLoading] = useState(false); // Added loading state
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Login function
-  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-    // Set loading state
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Simplified login for this demo
-      if ((role === 'student' && email === 'S202500290001@smark.schub.com' && password === 'password') ||
-          (role === 'admin' && email === 'chris.m@smack.schub.com' && password === 'password')) {
-        
-        const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
-        setUser(newUser);
-        localStorage.setItem('schub_user', JSON.stringify(newUser));
-        return true;
-      }
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) return false;
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      setUser({
+        id: authData.user.id,
+        email: authData.user.email!,
+        role: profile.role,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        profile_image: profile.profile_image,
+        school_id: profile.school_id
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
       return false;
     } finally {
-      // Always reset loading state
       setIsLoading(false);
     }
   };
 
-  // Logout function
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('schub_user');
-  };
-
-  // Switch between student and admin roles (for demo purposes)
-  const switchRole = (role: UserRole) => {
-    const newUser = role === 'student' ? SAMPLE_USERS.student : SAMPLE_USERS.admin;
-    setUser(newUser);
-    localStorage.setItem('schub_user', JSON.stringify(newUser));
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

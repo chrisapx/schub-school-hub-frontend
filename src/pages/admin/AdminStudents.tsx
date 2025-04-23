@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { Student } from '@/types/index';
+import type { Student } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,14 +80,10 @@ const AdminStudents = () => {
               profile.role === 'super_admin' ? 'id' : profile.school_id);
 
         if (error) throw error;
-        setStudents(data || []);
+        setStudents(data as Student[] || []);
       } catch (error) {
         console.error('Error fetching students:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load students data',
-          variant: 'destructive',
-        });
+        toast.error('Failed to load students data');
       } finally {
         setIsLoading(false);
       }
