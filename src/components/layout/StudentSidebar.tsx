@@ -73,14 +73,14 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({ open }) => {
         <div className="p-4 border-b">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80" />
+              <AvatarImage src="/placeholder.svg" />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {user?.name?.charAt(0) || 'S'}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="font-semibold">{user?.name || 'Student Name'}</span>
-              <span className="text-xs text-muted-foreground">Class 10A | Roll #42</span>
+              <span className="text-xs text-muted-foreground">Form 3A | SN { user?.id}</span>
             </div>
           </div>
         </div>

@@ -14,9 +14,11 @@ import { PageTabs } from '@/components/ui/page-tabs';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, BookOpen, User, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 
 const AdminSubjects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Define tabs
   const tabs = [
@@ -44,7 +46,8 @@ const AdminSubjects: React.FC = () => {
   );
 
   const handleAddSubject = () => {
-    toast.info('Add subject form would open here');
+    searchParams.set('marksFormOpen', '1');
+    setSearchParams(searchParams);
   };
 
   return (

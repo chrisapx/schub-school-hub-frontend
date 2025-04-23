@@ -67,7 +67,7 @@ const AdminDashboard: React.FC = () => {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Total Students</p>
@@ -79,7 +79,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Total Teachers</p>
@@ -91,7 +91,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Total Subjects</p>
@@ -103,7 +103,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="schub-stat-card">
+        <Card className="schub-stat-card p-4">
           <div className="flex justify-between">
             <div>
               <p className="schub-stat-label">Average Attendance</p>

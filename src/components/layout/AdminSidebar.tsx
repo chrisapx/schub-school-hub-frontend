@@ -73,14 +73,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open }) => {
         <div className="p-4 border-b">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80" />
+              <AvatarImage src="/favicon.ico" />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {user?.name?.charAt(0) || 'A'}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="font-semibold">{user?.name || 'Admin User'}</span>
-              <span className="text-xs text-muted-foreground">School Administrator</span>
+              <span className="text-xs text-muted-foreground">School Admin</span>
             </div>
           </div>
         </div>
@@ -128,7 +128,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open }) => {
             </div>
             <div className="text-xs text-muted-foreground space-y-2">
               <p>Version: v1.2.5</p>
-              <p>Last updated: April 16, 2025</p>
+              <p>Last updated: April 23, 2025</p>
             </div>
           </div>
         </div>
