@@ -15,14 +15,19 @@ export interface School {
 
 export interface Profile {
   id: string;
-  first_name?: string;
-  last_name?: string;
   email: string;
   role: UserRole;
-  school_id?: string;
+  first_name?: string;
+  last_name?: string;
   profile_image?: string;
+  school_id?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface User extends Profile {
+  name?: string; // Computed property
+  profileImage?: string; // Alias for profile_image for backwards compatibility
 }
 
 export interface Teacher {
@@ -72,7 +77,7 @@ export interface Student {
   created_at: string;
   updated_at: string;
   profile?: Profile;
-  class?: Class;
+  enrollmentStatus?: string; // Added for compatibility
 }
 
 export interface Class {

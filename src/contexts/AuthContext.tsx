@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { UserRole } from '@/types';
+import type { User, UserRole } from '@/types';
 
 export interface User {
   id: string;
@@ -11,6 +10,10 @@ export interface User {
   last_name?: string;
   profile_image?: string;
   school_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  name?: string;
+  profileImage?: string;
 }
 
 interface AuthContextType {
@@ -46,16 +49,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) throw profileError;
 
-      setUser({
+      const userData: User = {
         id: authData.user.id,
         email: authData.user.email!,
         role: profile.role,
         first_name: profile.first_name,
         last_name: profile.last_name,
         profile_image: profile.profile_image,
-        school_id: profile.school_id
-      });
+        school_id: profile.school_id,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
+        name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || undefined,
+        profileImage: profile.profile_image
+      };
 
+      setUser(userData);
       return true;
     } catch (error) {
       console.error('Login error:', error);

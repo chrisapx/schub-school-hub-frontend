@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react';
@@ -8,7 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LoginFormProps {
@@ -41,16 +39,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ portalType }) => {
           .eq('id', user.id)
           .single();
 
+        if (!profile) {
+          toast.error('Could not retrieve profile information');
+          return;
+        }
+
         toast.success('Login successful');
         
         // Redirect based on role and portal type
-        if (portalType === 'student' && profile?.role === 'student') {
+        if (portalType === 'student' && profile.role === 'student') {
           navigate('/student/dashboard');
-        } else if (portalType === 'admin' && ['super_admin', 'school_admin', 'teacher'].includes(profile?.role)) {
+        } else if (portalType === 'admin' && 
+          (profile.role === 'super_admin' || profile.role === 'school_admin' || profile.role === 'teacher')) {
           navigate('/admin/dashboard');
         } else {
           toast.error('Access denied. Please use the correct portal.');
         }
+      } else {
+        toast.error('Login failed. Please check your credentials and try again.');
       }
     } catch (error) {
       console.error('Login failed:', error);
